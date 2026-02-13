@@ -3,6 +3,7 @@
 # Architecture: FastAPI + SQLAlchemy + PostgreSQL
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.routes import router as payment_router
 from app.db.session import engine, Base
 
@@ -10,6 +11,15 @@ app = FastAPI(
     title="Payment Service",
     description="Handles payment processing and notifies order-service.",
     version="1.0.0"
+)
+
+# CORS middleware - Allow all origins since requests go through API Gateway
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 @app.on_event("startup")
