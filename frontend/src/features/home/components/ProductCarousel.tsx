@@ -2,8 +2,7 @@
 // UI Component: ProductCarousel
 // Modern product carousel for homepage hero section
 
-import { useState, useEffect, useCallback, memo } from 'react';
-import Image from 'next/image';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, ShoppingCart } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -48,7 +47,7 @@ const slides: CarouselSlide[] = [
   }
 ];
 
-const ProductCarousel = memo(function ProductCarousel() {
+export default function ProductCarousel() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const router = useRouter();
@@ -63,24 +62,20 @@ const ProductCarousel = memo(function ProductCarousel() {
     return () => clearInterval(timer);
   }, []);
 
-  const handleNext = useCallback(() => {
+  const handleNext = () => {
     setDirection(1);
     setCurrentIndex((prev) => (prev + 1) % slides.length);
-  }, []);
+  };
 
-  const handlePrev = useCallback(() => {
+  const handlePrev = () => {
     setDirection(-1);
     setCurrentIndex((prev) => (prev - 1 + slides.length) % slides.length);
-  }, []);
+  };
 
-  const handleDotClick = useCallback((index: number) => {
+  const handleDotClick = (index: number) => {
     setDirection(index > currentIndex ? 1 : -1);
     setCurrentIndex(index);
-  }, [currentIndex]);
-
-  const handleCTAClick = useCallback(() => {
-    router.push(slides[currentIndex].ctaLink);
-  }, [currentIndex, router]);
+  };
 
   const slideVariants = {
     enter: (direction: number) => ({
@@ -119,14 +114,10 @@ const ProductCarousel = memo(function ProductCarousel() {
         >
           {/* Background Image with Overlay */}
           <div className="absolute inset-0">
-            <Image 
+            <img 
               src={currentSlide.image} 
               alt={currentSlide.title}
-              fill
-              className="object-cover"
-              priority={currentIndex === 0}
-              quality={80}
-              sizes="100vw"
+              className="w-full h-full object-cover"
             />
             <div className={`absolute inset-0 bg-gradient-to-r ${currentSlide.bgGradient} opacity-80`}></div>
           </div>
@@ -152,13 +143,18 @@ const ProductCarousel = memo(function ProductCarousel() {
                 {currentSlide.description}
               </motion.p>
               
-              <button
-                onClick={handleCTAClick}
-                className="px-6 py-3 bg-white text-gray-900 rounded-full font-bold text-base shadow-xl hover:shadow-2xl transition-all flex items-center gap-2 group hover:scale-105"
+              <motion.button
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => router.push(currentSlide.ctaLink)}
+                className="px-6 py-3 bg-white text-gray-900 rounded-full font-bold text-base shadow-xl hover:shadow-2xl transition-all flex items-center gap-2 group"
               >
-                <ShoppingCart className="w-5 h-5" />
+                <ShoppingCart className="w-5 h-5 group-hover:scale-110 transition-transform" />
                 {currentSlide.ctaText}
-              </button>
+              </motion.button>
             </div>
           </div>
         </motion.div>
@@ -195,6 +191,4 @@ const ProductCarousel = memo(function ProductCarousel() {
       </div>
     </div>
   );
-});
-
-export default ProductCarousel;
+}
