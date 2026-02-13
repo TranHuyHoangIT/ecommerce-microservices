@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import StaffLayout from '@/components/StaffLayout';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import StockBadge from '@/components/StockBadge';
@@ -8,7 +8,7 @@ import { Product } from '@/types/products';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function StaffProductsPage() {
+function StaffProductsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
@@ -221,5 +221,13 @@ export default function StaffProductsPage() {
         )}
       </div>
     </StaffLayout>
+  );
+}
+
+export default function StaffProductsPage() {
+  return (
+    <Suspense fallback={<StaffLayout><div className="flex items-center justify-center h-96"><LoadingSpinner size="large" /></div></StaffLayout>}>
+      <StaffProductsContent />
+    </Suspense>
   );
 }

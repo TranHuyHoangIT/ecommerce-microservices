@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import StaffLayout from '@/components/StaffLayout';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import OrderStatusBadge from '@/components/OrderStatusBadge';
@@ -8,7 +8,7 @@ import { Order } from '@/services/api/orders';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
-export default function StaffOrdersPage() {
+function StaffOrdersContent() {
   const searchParams = useSearchParams();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -228,5 +228,13 @@ export default function StaffOrdersPage() {
         )}
       </div>
     </StaffLayout>
+  );
+}
+
+export default function StaffOrdersPage() {
+  return (
+    <Suspense fallback={<StaffLayout><div className="flex items-center justify-center h-96"><LoadingSpinner size="large" /></div></StaffLayout>}>
+      <StaffOrdersContent />
+    </Suspense>
   );
 }

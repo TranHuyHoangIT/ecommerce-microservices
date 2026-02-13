@@ -199,15 +199,13 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                     </button>
                   )}
 
-                  {order.status !== 'cancelled' && (
-                    <button
-                      onClick={() => handleStatusUpdate('cancelled')}
-                      disabled={updating}
-                      className="w-full px-4 py-3 bg-red-500 text-white font-semibold rounded-xl hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Hủy đơn hàng
-                    </button>
-                  )}
+                  <button
+                    onClick={() => handleStatusUpdate('cancelled')}
+                    disabled={updating}
+                    className="w-full px-4 py-3 bg-red-500 text-white font-semibold rounded-xl hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Hủy đơn hàng
+                  </button>
 
                   {/* Note */}
                   <div>

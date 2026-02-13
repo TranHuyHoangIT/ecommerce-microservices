@@ -7,6 +7,11 @@ import { useState, useEffect } from 'react';
 import { getAllProducts, createProduct, updateProduct, deleteProduct, uploadProductImage, ProductFormData, getAllCategories } from '@/services/api/admin';
 import { useToast } from '@/contexts/ToastContext';
 
+// Type guard để kiểm tra category là object có name
+function isCategoryObject(category: unknown): category is { name: string } {
+  return typeof category === 'object' && category !== null && 'name' in category;
+}
+
 interface Product {
   id: number;
   name: string;
@@ -49,6 +54,27 @@ export default function ProductsManagement() {
     brand: '',
     image: '',
   });
+
+  const handleEdit = (product: Product) => {
+    setEditingProduct(product);
+    let categoryValue = '';
+    if (isCategoryObject(product.category)) {
+      categoryValue = product.category.name || '';
+    } else if (typeof product.category === 'string') {
+      categoryValue = product.category;
+    }
+
+    setFormData({
+      name: product.name,
+      description: product.description || '',
+      price: product.price,
+      stock: product.stock,
+      category: categoryValue,
+      brand: product.brand || '',
+      image: product.image || '',
+    });
+    setShowModal(true);
+  };
 
   useEffect(() => {
     loadProducts();
@@ -95,20 +121,6 @@ export default function ProductsManagement() {
     } catch (error) {
       showToast('Không thể lưu sản phẩm', 'error');
     }
-  };
-
-  const handleEdit = (product: Product) => {
-    setEditingProduct(product);
-    setFormData({
-      name: product.name,
-      description: product.description || '',
-      price: product.price,
-      stock: product.stock,
-      category: product.category && typeof product.category === 'object' ? (product.category?.name || '') : (product.category || ''),
-      brand: product.brand || '',
-      image: product.image || '',
-    });
-    setShowModal(true);
   };
 
   const handleDeleteClick = (id: number) => {
@@ -158,7 +170,9 @@ export default function ProductsManagement() {
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const categoryName = typeof product.category === 'object' ? product.category?.name : product.category;
+    const categoryName = isCategoryObject(product.category)
+      ? product.category.name
+      : product.category || '';
     const matchesCategory = filterCategory === 'all' || categoryName === filterCategory;
     return matchesSearch && matchesCategory;
   });
@@ -245,7 +259,7 @@ export default function ProductsManagement() {
                         </td>
                         <td className="px-6 py-4">
                           <span className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm whitespace-nowrap">
-                            {typeof product.category === 'object' ? product.category?.name : product.category || 'N/A'}
+                            {isCategoryObject(product.category) ? product.category.name : product.category || 'N/A'}
                           </span>
                         </td>
                         <td className="px-6 py-4 font-semibold text-gray-900">${product.price}</td>

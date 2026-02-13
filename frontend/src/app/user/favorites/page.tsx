@@ -53,7 +53,7 @@ export default function FavoritesPage() {
     
     try {
       await removeFromWishlist(user.id, productId);
-      setFavorites(prev => prev.filter(p => p.id !== productId));
+      setFavorites(prev => prev.filter(p => Number(p.id) !== productId));
       toast.success("Đã xóa khỏi danh sách yêu thích");
     } catch (err: any) {
       console.error("Failed to remove favorite:", err);
@@ -170,7 +170,7 @@ export default function FavoritesPage() {
                   
                   {/* Remove Button Overlay */}
                   <motion.button
-                    onClick={() => removeFavorite(product.id)}
+                    onClick={() => removeFavorite(Number(product.id))}
                     className="absolute top-4 right-4 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center z-10 hover:bg-red-50 transition-colors"
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}

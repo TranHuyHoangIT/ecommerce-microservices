@@ -17,6 +17,11 @@ import { ErrorMessage } from "@/components/ErrorMessage";
 import ProductCard from "@/components/ProductCard";
 import { useToast } from "@/contexts/ToastContext";
 
+// Type guard để kiểm tra category là object có name
+function isCategoryObject(category: unknown): category is { name: string } {
+  return typeof category === 'object' && category !== null && 'name' in category;
+}
+
 interface ProductDetailPageProps {
   productId: string;
 }
@@ -52,7 +57,7 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
     if (!user?.id || !product?.id) return;
     
     try {
-      const inWishlist = await isInWishlist(user.id, product.id);
+      const inWishlist = await isInWishlist(user.id, Number(product.id));
       setIsFavorite(inWishlist);
     } catch (err) {
       console.error("Failed to check wishlist status:", err);
@@ -88,12 +93,12 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
     try {
       if (isFavorite) {
         // Remove from wishlist
-        await removeFromWishlist(user.id, product.id);
+        await removeFromWishlist(user.id, Number(product.id));
         setIsFavorite(false);
         showToast("Đã xóa khỏi danh sách yêu thích", "success");
       } else {
         // Add to wishlist
-        await addToWishlist(user.id, product.id);
+        await addToWishlist(user.id, Number(product.id));
         setIsFavorite(true);
         showToast("Đã thêm vào danh sách yêu thích", "success");
       }
@@ -289,7 +294,7 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
                   </motion.span>
                 )}
                 {product.category && (
-                  <span className="text-gray-500">• {product.category}</span>
+                  <span className="text-gray-500">• {isCategoryObject(product.category) ? product.category.name : product.category}</span>
                 )}
               </motion.div>
             )}

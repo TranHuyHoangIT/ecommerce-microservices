@@ -65,7 +65,7 @@ const CartPage: React.FC = () => {
       // Create order
       const order = await createOrder({
         user_id: user.id,
-        user_name: user.name,
+        user_name: user.fullName,
         user_email: user.email,
         items: orderItems,
         shipping_address: checkoutData.shipping_address,

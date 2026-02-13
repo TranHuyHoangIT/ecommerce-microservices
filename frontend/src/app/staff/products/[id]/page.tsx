@@ -335,12 +335,13 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
       {/* Delete Confirmation Dialog */}
       {showDeleteDialog && (
         <ConfirmDialog
+          isOpen={showDeleteDialog}
+          onClose={() => setShowDeleteDialog(false)}
+          onConfirm={handleDelete}
           title="Xác nhận xóa sản phẩm"
           message={`Bạn có chắc chắn muốn xóa sản phẩm "${product?.name}"? Hành động này không thể hoàn tác.`}
           confirmText="Xóa"
           cancelText="Hủy"
-          onConfirm={handleDelete}
-          onCancel={() => setShowDeleteDialog(false)}
           type="danger"
         />
       )}
