@@ -104,7 +104,7 @@ export default function ProductsManagement() {
       description: product.description || '',
       price: product.price,
       stock: product.stock,
-      category: typeof product.category === 'object' ? product.category?.name || '' : product.category || '',
+      category: product.category && typeof product.category === 'object' ? product.category.name || '' : product.category || '',
       brand: product.brand || '',
       image: product.image || '',
     });
