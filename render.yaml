@@ -1,0 +1,74 @@
+# Render Blueprint for E-Commerce Microservices
+# 100% MIỄN PHÍ - Backend services sẽ sleep sau 15 phút không dùng
+# Database sử dụng Neon (cũng miễn phí, không sleep)
+
+services:
+  # API Gateway
+  - type: web
+    name: ecommerce-api-gateway
+    env: docker
+    dockerfilePath: ./api-gateway/Dockerfile
+    dockerContext: ./api-gateway
+    plan: free
+    envVars:
+      - key: AUTH_SERVICE_URL
+        value: https://ecommerce-auth-service.onrender.com
+      - key: PRODUCT_SERVICE_URL
+        value: https://ecommerce-product-service.onrender.com
+      - key: ORDER_SERVICE_URL
+        value: https://ecommerce-order-service.onrender.com
+      - key: PAYMENT_SERVICE_URL
+        value: https://ecommerce-payment-service.onrender.com
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: JWT_ALGORITHM
+        value: HS256
+
+  # Auth Service
+  - type: web
+    name: ecommerce-auth-service
+    env: docker
+    dockerfilePath: ./services/auth-service/Dockerfile
+    dockerContext: ./services/auth-service
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        sync: false  # Sẽ nhập từ Neon database
+      - key: JWT_SECRET_KEY
+        sync: false  # Phải giống với API Gateway
+      - key: JWT_ALGORITHM
+        value: HS256
+
+  # Product Service
+  - type: web
+    name: ecommerce-product-service
+    env: docker
+    dockerfilePath: ./services/product-service/Dockerfile
+    dockerContext: ./services/product-service
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        sync: false  # Sẽ nhập từ Neon database
+
+  # Order Service
+  - type: web
+    name: ecommerce-order-service
+    env: docker
+    dockerfilePath: ./services/order-service/Dockerfile
+    dockerContext: ./services/order-service
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        sync: false  # Sẽ nhập từ Neon database
+
+  # Payment Service
+  - type: web
+    name: ecommerce-payment-service
+    env: docker
+    dockerfilePath: ./services/payment-service/Dockerfile
+    dockerContext: ./services/payment-service
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        sync: false  # Sẽ nhập từ Neon database
+    user: payment_user

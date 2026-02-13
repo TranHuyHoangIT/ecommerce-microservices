@@ -1,0 +1,157 @@
+services:
+  db-auth:
+    image: postgres:15
+    container_name: db-auth
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5433:5432"
+    networks:
+      - ecommerce
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d auth_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  auth-service:
+    build: ./services/auth-service
+    container_name: auth-service
+    environment:
+      DATABASE_URL: postgresql+psycopg2://user:password@db-auth:5432/auth_db
+      JWT_SECRET_KEY: supersecretkey
+      JWT_ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 60
+      # Email configuration - Use Resend API (recommended)
+      # Get free API key from https://resend.com (3000 emails/month free)
+      # Create .env file with RESEND_API_KEY=your_key_here
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      FROM_EMAIL: ${FROM_EMAIL:-onboarding@resend.dev}
+      FROM_NAME: ${FROM_NAME:-HoangTranShop}
+    depends_on:
+      db-auth:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    networks:
+      - ecommerce
+    command: ["/bin/sh", "/app/start.sh"]
+
+  db-product:
+    image: postgres:15
+    container_name: db-product
+    environment:
+      POSTGRES_DB: product_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5434:5432"
+    networks:
+      - ecommerce
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d product_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  product-service:
+    build: ./services/product-service
+    container_name: product-service
+    environment:
+      DATABASE_URL: postgresql+psycopg2://user:password@db-product:5432/product_db
+    depends_on:
+      db-product:
+        condition: service_healthy
+    ports:
+      - "8001:8000"
+    networks:
+      - ecommerce
+    command: ["/bin/sh", "/app/start.sh"]
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8000
+      PRODUCT_SERVICE_URL: http://product-service:8000
+      ORDER_SERVICE_URL: http://order-service:8000
+      PAYMENT_SERVICE_URL: http://payment-service:8000
+      JWT_SECRET_KEY: supersecretkey
+      JWT_ALGORITHM: HS256
+    depends_on:
+      - auth-service
+      - product-service
+      - order-service
+      - payment-service
+    ports:
+      - "8080:8080"
+    networks:
+      - ecommerce
+
+  db-order:
+    image: postgres:15
+    container_name: db-order
+    environment:
+      POSTGRES_DB: order_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5435:5432"
+    networks:
+      - ecommerce
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d order_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  order-service:
+    build: ./services/order-service
+    container_name: order-service
+    environment:
+      DATABASE_URL: postgresql+psycopg2://user:password@db-order:5432/order_db
+    depends_on:
+      db-order:
+        condition: service_healthy
+    ports:
+      - "8002:8000"
+    networks:
+      - ecommerce
+    command: ["/bin/sh", "/app/start.sh"]
+
+  db-payment:
+    image: postgres:15
+    container_name: db-payment
+    environment:
+      POSTGRES_DB: payment_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5436:5432"
+    networks:
+      - ecommerce
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d payment_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  payment-service:
+    build: ./services/payment-service
+    container_name: payment-service
+    environment:
+      DATABASE_URL: postgresql+psycopg2://user:password@db-payment:5432/payment_db
+    depends_on:
+      db-payment:
+        condition: service_healthy
+    ports:
+      - "8003:8000"
+    networks:
+      - ecommerce
+    command: ["/bin/sh", "/app/start.sh"]
+
+networks:
+  ecommerce:
+    driver: bridge
