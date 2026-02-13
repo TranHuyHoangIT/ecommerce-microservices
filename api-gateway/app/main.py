@@ -6,8 +6,16 @@ from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
+import logging
 from app.core.config import settings
 from app.core.auth import verify_token
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="API Gateway",
@@ -74,10 +82,25 @@ def is_public_route(path: str) -> bool:
 def health_check():
     return {"status": "ok", "service": "api-gateway"}
 
+@app.on_event("startup")
+async def startup_event():
+    """Log configuration on startup"""
+    logger.info("=== API Gateway Configuration ===")
+    logger.info(f"AUTH_SERVICE_URL: {settings.AUTH_SERVICE_URL}")
+    logger.info(f"PRODUCT_SERVICE_URL: {settings.PRODUCT_SERVICE_URL}")
+    logger.info(f"ORDER_SERVICE_URL: {settings.ORDER_SERVICE_URL}")
+    logger.info(f"PAYMENT_SERVICE_URL: {settings.PAYMENT_SERVICE_URL}")
+    logger.info("=================================")
+
 @app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"], tags=["Gateway"])
 async def gateway(path: str, request: Request):
     """Forward all requests to appropriate microservice"""
     full_path = f"/{path}"
+    
+    logger.info(f"=== Incoming Request ===")
+    logger.info(f"Method: {request.method}")
+    logger.info(f"Path: {full_path}")
+    logger.info(f"Query params: {dict(request.query_params)}")
     
     # Check authentication for protected routes
     token_payload = None
@@ -87,6 +110,10 @@ async def gateway(path: str, request: Request):
     # Get target service URL
     service_url = get_service_url(full_path)
     target_url = f"{service_url}/{path}"
+    
+    logger.info(f"=== Forwarding Request ===")
+    logger.info(f"Service URL: {service_url}")
+    logger.info(f"Target URL: {target_url}")
     
     # Forward request
     async with httpx.AsyncClient() as client:
@@ -99,6 +126,8 @@ async def gateway(path: str, request: Request):
             
             # Get request body
             body = await request.body()
+            if body:
+                logger.info(f"Request body length: {len(body)} bytes")
             
             # Forward request to target service
             response = await client.request(
@@ -110,11 +139,28 @@ async def gateway(path: str, request: Request):
                 timeout=30.0
             )
             
+            logger.info(f"=== Response from service ===")
+            logger.info(f"Status: {response.status_code}")
+            logger.info(f"Response length: {len(response.content)} bytes")
+            
             # Return response from target service
             return Response(
                 content=response.content,
                 status_code=response.status_code,
                 headers=dict(response.headers)
             )
+        except httpx.ConnectError as e:
+            logger.error(f"=== Connection Error ===")
+            logger.error(f"Failed to connect to: {target_url}")
+            logger.error(f"Error: {str(e)}")
+            raise HTTPException(status_code=502, detail=f"Cannot connect to service: {service_url}")
+        except httpx.TimeoutException as e:
+            logger.error(f"=== Timeout Error ===")
+            logger.error(f"Timeout connecting to: {target_url}")
+            logger.error(f"Error: {str(e)}")
+            raise HTTPException(status_code=504, detail=f"Service timeout: {service_url}")
         except httpx.RequestError as e:
+            logger.error(f"=== Request Error ===")
+            logger.error(f"Request to: {target_url}")
+            logger.error(f"Error: {str(e)}")
             raise HTTPException(status_code=503, detail=f"Service unavailable: {str(e)}")

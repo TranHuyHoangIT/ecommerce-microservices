@@ -5,6 +5,7 @@
 from fastapi import APIRouter, Depends, status, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List
+import logging
 from app.schemas.product import ProductCreate, ProductUpdate, ProductRead
 from app.schemas.wishlist import WishlistCreate, WishlistRead
 from app.schemas.category import CategoryCreate, CategoryUpdate, CategoryRead
@@ -12,6 +13,8 @@ from app.services.product import ProductService
 from app.services.wishlist import WishlistService
 from app.services.category import CategoryService
 from app.db.session import SessionLocal
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -24,7 +27,10 @@ def get_db():
 
 @router.get("/products", response_model=List[ProductRead], tags=["Products"], summary="List products", description="Get all products", status_code=status.HTTP_200_OK)
 def list_products(db: Session = Depends(get_db)):
-    return ProductService(db).get_products()
+    logger.info("=== List Products Request ===")
+    products = ProductService(db).get_products()
+    logger.info(f"Returning {len(products)} products")
+    return products
 
 @router.get("/products/search", response_model=List[ProductRead], tags=["Products"], summary="Search products", description="Search products by name, description, category, or brand", status_code=status.HTTP_200_OK)
 def search_products(q: str = Query(..., description="Search query"), db: Session = Depends(get_db)):
@@ -36,9 +42,12 @@ def get_products_by_category(category: str, db: Session = Depends(get_db)):
 
 @router.get("/products/{product_id}", response_model=ProductRead, tags=["Products"], summary="Get product", description="Get product by ID", status_code=status.HTTP_200_OK)
 def get_product(product_id: int, db: Session = Depends(get_db)):
+    logger.info(f"=== Get Product Request: {product_id} ===")
     product = ProductService(db).get_product(product_id)
     if not product:
+        logger.warning(f"Product not found: {product_id}")
         raise HTTPException(status_code=404, detail="Product not found")
+    logger.info(f"Product found: {product.name}")
     return product
 
 @router.get("/products/{product_id}/related", response_model=List[ProductRead], tags=["Products"], summary="Get related products", description="Get related products based on category", status_code=status.HTTP_200_OK)

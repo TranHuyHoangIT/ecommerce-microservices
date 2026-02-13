@@ -3,6 +3,7 @@
 # Architecture: FastAPI + SQLAlchemy + PostgreSQL
 
 from sqlalchemy.orm import Session
+import logging
 from app.repositories.user import UserRepository, verify_password
 from app.schemas.user import UserCreate, UserLogin, UserUpdate, ChangePassword
 from app.models.user import User
@@ -10,6 +11,8 @@ from app.core.security import create_access_token
 from app.schemas.user import Token
 from app.core.email import email_service
 from fastapi import HTTPException, status
+
+logger = logging.getLogger(__name__)
 
 class UserService:
     """Service for user business logic."""
@@ -22,10 +25,22 @@ class UserService:
         return self.repo.create(user_in)
 
     def authenticate(self, user_in: UserLogin) -> Token:
+        logger.info(f"Authenticating user: {user_in.email}")
         user = self.repo.get_by_email(user_in.email)
-        if not user or not verify_password(user_in.password, user.hashed_password):
+        
+        if not user:
+            logger.warning(f"User not found: {user_in.email}")
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+        
+        logger.info(f"User found: {user.id}, checking password...")
+        if not verify_password(user_in.password, user.hashed_password):
+            logger.warning(f"Invalid password for user: {user_in.email}")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+        
+        logger.info(f"Password verified, creating token...")
         access_token = create_access_token(data={"sub": user.email, "role": user.role})
+        logger.info(f"Token created successfully for user: {user.id}")
+        
         return Token(
             access_token=access_token,
             token_type="bearer",

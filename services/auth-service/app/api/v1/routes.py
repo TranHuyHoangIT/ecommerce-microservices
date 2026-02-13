@@ -6,11 +6,14 @@ from fastapi import APIRouter, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from typing import List
+import logging
 from app.schemas.user import UserCreate, UserRead, UserLogin, Token, UserUpdate, ChangePassword, UserRoleUpdate, UserBlockUpdate, AdminCreateUser, AdminCreateUserResponse
 from app.services.user import UserService
 from app.db.session import SessionLocal
 from app.core.dependencies import get_current_user, get_current_admin_user
 from app.models.user import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -23,15 +26,22 @@ def get_db():
 
 @router.post("/auth/register", response_model=UserRead, tags=["Auth"], summary="Register user", description="Register a new user", status_code=status.HTTP_201_CREATED)
 def register(user_in: UserCreate, db: Session = Depends(get_db)):
+    logger.info(f"=== Register Request ===")
+    logger.info(f"Email: {user_in.email}")
     service = UserService(db)
     user = service.register(user_in)
+    logger.info(f"User registered successfully: {user.id}")
     return user
 
 @router.post("/auth/login", response_model=Token, tags=["Auth"], summary="User login", description="Authenticate user and return JWT token", status_code=status.HTTP_200_OK)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    logger.info(f"=== Login Request ===")
+    logger.info(f"Username/Email: {form_data.username}")
     service = UserService(db)
     user_in = UserLogin(email=form_data.username, password=form_data.password)
-    return service.authenticate(user_in)
+    result = service.authenticate(user_in)
+    logger.info(f"Login successful for: {form_data.username}")
+    return result
 
 @router.get("/users/me", response_model=UserRead, tags=["Users"], summary="Get current user", description="Get current authenticated user profile")
 async def get_current_user_profile(current_user: User = Depends(get_current_user)):

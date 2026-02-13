@@ -4,9 +4,12 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+import logging
 from app.db.session import SessionLocal
 from app.services.payment import PaymentService
 from app.schemas.payment import PaymentCreate, PaymentUpdate, PaymentOut
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -19,13 +22,21 @@ def get_db():
 
 @router.post("/", tags=["payments"], summary="Create Payment", description="Create a new payment record", response_model=PaymentOut, status_code=201)
 def create_payment(payment: PaymentCreate, db: Session = Depends(get_db)):
-    return PaymentService.create_payment(db, payment)
+    logger.info(f"=== Create Payment Request ===")
+    logger.info(f"Order ID: {payment.order_id}")
+    logger.info(f"Amount: {payment.amount}")
+    result = PaymentService.create_payment(db, payment)
+    logger.info(f"Payment created: {result.id}, status: {result.status}")
+    return result
 
 @router.get("/{payment_id}", tags=["payments"], summary="Get Payment", description="Retrieve payment by ID", response_model=PaymentOut, status_code=200)
 def get_payment(payment_id: int, db: Session = Depends(get_db)):
+    logger.info(f"=== Get Payment Request: {payment_id} ===")
     payment = PaymentService.get_payment(db, payment_id)
     if not payment:
+        logger.warning(f"Payment not found: {payment_id}")
         raise HTTPException(status_code=404, detail="Payment not found")
+    logger.info(f"Payment found: {payment.id}, status: {payment.status}")
     return payment
 
 @router.get("/", tags=["payments"], summary="List Payments", description="List all payments", response_model=list[PaymentOut], status_code=200)

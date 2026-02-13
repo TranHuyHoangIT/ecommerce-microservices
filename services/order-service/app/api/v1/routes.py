@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+import logging
 from app.db.session import SessionLocal
 from app.services.order import OrderService
 from app.services.analytics import AnalyticsService
@@ -15,6 +16,8 @@ from app.services.cart import (
 )
 import uuid
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
 
 def get_db():
@@ -26,13 +29,21 @@ def get_db():
 
 @router.post("/orders", response_model=OrderRead, tags=["Orders"], summary="Create order", description="Create a new order", status_code=201)
 def create_order(order: OrderCreate, db: Session = Depends(get_db)):
-    return OrderService.create_order(db, order)
+    logger.info(f"=== Create Order Request ===")
+    logger.info(f"User ID: {order.user_id}")
+    logger.info(f"Items count: {len(order.items)}")
+    result = OrderService.create_order(db, order)
+    logger.info(f"Order created: {result.id}")
+    return result
 
 @router.get("/orders/{order_id}", response_model=OrderRead, tags=["Orders"], summary="Get order", description="Get order by ID", status_code=200)
 def get_order(order_id: int, db: Session = Depends(get_db)):
+    logger.info(f"=== Get Order Request: {order_id} ===")
     order = OrderService.get_order(db, order_id)
     if not order:
+        logger.warning(f"Order not found: {order_id}")
         raise HTTPException(status_code=404, detail="Order not found")
+    logger.info(f"Order found: {order.id}, status: {order.status}")
     return order
 
 @router.get("/orders", response_model=List[OrderRead], tags=["Orders"], summary="List all orders", description="Get all orders", status_code=200)
